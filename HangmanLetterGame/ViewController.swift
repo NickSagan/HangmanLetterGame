@@ -16,7 +16,7 @@ class ViewController: UIViewController {
         }
     }
     
-    
+    var level = 1
     var clueLabel: UILabel!
     var answerLabel: UILabel!
     var currentAnswer: UITextField!
@@ -27,8 +27,8 @@ class ViewController: UIViewController {
     
     let alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "G", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
     
-    let clue1 = "Your lovely programming language:"
-    let answer1 = "SWIFT"
+    var clue = "Your lovely programming language:"
+    var answer = "SWIFT"
     
     
     override func viewDidLoad() {
@@ -116,12 +116,22 @@ class ViewController: UIViewController {
     func loadLevel() {
         letterButtons.shuffle()
         deathProgress.progress = 0.0
-        clueLabel.text = clue1
         
         var tempAnswer = [String]()
         
+        // You can add as many level files as you want
+        if let levelFileUrl = Bundle.main.url(forResource: "level\(level)", withExtension: "txt") {
+            if var levelContents = try? String(contentsOf: levelFileUrl) {
+                levelContents = levelContents.trimmingCharacters(in: .newlines)
+                let levelText = levelContents.components(separatedBy: ":")
+                answer = levelText[1]
+                clue = levelText[0]
+                clueLabel.text = clue
+            }
+        }
+        
         answerLabel.text = ""
-        for letter in answer1 {
+        for letter in answer {
             answerLabel.text! += "?"
             tempAnswer.append(String(letter))
         }
@@ -153,29 +163,45 @@ class ViewController: UIViewController {
     
     @objc func letterTapped(_ sender: UIButton) {
         let chosenLetter = sender.titleLabel!.text!
-        if answer1.contains(chosenLetter) {
+        if answer.contains(chosenLetter) {
             score += 1
             var itIsFirstCase = true
-            for letter in answer1 {
+            for letter in answer {
                 if String(letter) == chosenLetter && itIsFirstCase {
-                    let x = answer1.firstIndex(of: letter)!
+                    let x = answer.firstIndex(of: letter)!
                     answerLabel.text = answerLabel.text?.replacingCharacters(in: x...x, with: chosenLetter)
                     itIsFirstCase = false
                     sender.isHidden = true
                 }
             }
-            if answer1 == answerLabel.text {
-                answerLabel.textColor = .green
+            if answer == answerLabel.text {
+                answerLabel.textColor = .systemGreen
                 answerLabel.text! += " - YOU WIN!"
+                
+                let ac = UIAlertController(title: "You win!", message: "Ready for next level?", preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: levelUp))
+                present(ac, animated: true, completion: nil)
             }
             
         } else {
             score -= 1
             deathProgress.progress += 0.15
             if deathProgress.progress >= 1.0 {
-                answerLabel.textColor = .red
+                answerLabel.textColor = .systemRed
                 answerLabel.text! += " - YOU LOSE!"
+                let ac = UIAlertController(title: "You lose!", message: "Ready to play again?", preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: playAgain))
+                present(ac, animated: true, completion: nil)
             }
         }
-    } 
+    }
+    
+    func levelUp(action: UIAlertAction) {
+        level += 1
+        loadLevel()
+    }
+    func playAgain(action: UIAlertAction) {
+        level = 1
+        loadLevel()
+    }
 }
